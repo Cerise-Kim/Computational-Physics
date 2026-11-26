@@ -68,3 +68,70 @@ top_3_idx=np.argsort(W)[-3:]
 bottom_3_idx = np.argsort(W)[:3]
 print("OLS 가장 높은 W 3개 =>", ["{:0.2f}".format(W[i]) for i in top_3_idx])
 print("OLS 가장 낮은 W 3개 =>", ["{:0.2f}".format(W[i]) for i in bottom_3_idx])
+
+ridge00 = Ridge(alpha=0.0).fit(X_train_s, y_train)
+ridge005 = Ridge(alpha=0.05).fit(X_train_s, y_train)
+ridge01 = Ridge(alpha=0.1).fit(X_train_s, y_train)
+ridge05 = Ridge(alpha=0.5).fit(X_train_s, y_train)
+ridge1 = Ridge(alpha=1.0).fit(X_train_s, y_train)
+ridge10 = Ridge(alpha=10.0).fit(X_train_s, y_train)
+
+def report_ridge(name, model):
+    pred=model.predict(X_test_s)
+    print(f"[alpha={name}] Training R^2: {model.score(X_train_s, y_train):0.2f}|"
+          f"Test R^2: {model.score(X_test_s, y_test):0.2f} |"
+          f"MSE: {MSE(y_test,pred):0.2f}")
+                  
+print("\n lambda 값에 대한 train-test R^2, MSE값")
+report_ridge("0.0", ridge00)
+report_ridge("0.05", ridge005)
+report_ridge("0.1", ridge01)
+report_ridge("0.5", ridge05)
+report_ridge("1.0", ridge1)
+report_ridge("10.0", ridge10)
+
+alpha = [i / 10 for i in range(0, 101)]
+train_score, test_score = [], []
+
+for a in alpha:
+    m = Ridge(alpha=a)
+    m.fit(X_train_s, y_train)
+    train_score.append(m.score(X_train_s, y_train))
+    test_score.append(m.score(X_test_s, y_test))
+
+plt.figure()
+plt.grid(linestyle='--')
+plt.plot(alpha, test_score,label="Test Score")
+plt.plot(alpha, test_score, label="Test Score")
+plt.title("Ridge Score (Boston, degree=2, manual standardization)")
+plt.legend(loc='best')
+plt.xlabel("Alpha")
+plt.ylabel("R^2 Score")
+plt.ylim(0, 1)
+plt.show()
+
+coef_ridge01 = ridge01.coef_
+coef_ridge05 = ridge05.coef_
+coef_ridge1 = ridge1.coef_
+coef_ridge10 = ridge10.coef_
+
+reg_std = LinearRegression().fit(X_train_s, y_train)
+W_std=reg_std.coef_
+
+plt.figure(figsize=(13, 7))
+plt.plot(W, 'p', label="OLS (no scaling)")
+plt.plot(W_std, 'x', label="OLS (std space)")
+plt.plot(coef_ridge01, '.', label="Ridge alpha=0.1 (std)")
+plt.plot(coef_ridge05, 'v', label="Ridge alpha=0.5 (std)")
+plt.plot(coef_ridge1, 'o', label="Ridge alpha=1 (std)")
+plt.plot(coef_ridge10, 'p', label="Ridge alpha=10 (std)")
+
+stacked = np.concatenate([W, W_std, coef_ridge01, coef_ridge05, coef_ridge1, coef_ridge10])
+max_abs = np.max(np.abs(stacked))
+plt.ylim(-1.1*max_abs, 1.1 * max_abs)
+
+plt.legend(loc='center', bbox_to_anchor=(1.2, 0.5))
+plt.ylabel("W values")
+plt.title("Coefficient Comparison (Boston degree=2, std space)")
+plt.tight_layout()
+plt.show()
